@@ -1,0 +1,50 @@
+name: GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 8.14.0
+
+      - name: setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: "20.5.1"
+
+      - name: Cache dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: install
+        run: pnpm i --frozen-lockfile
+
+      - name: build
+        env:
+          BASE_PATH: /discord-snowflake-parser
+        run: pnpm run build
+
+      - name: add nojekyll
+        run: touch ./out/.nojekyll
+
+      - name: deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
